@@ -77,7 +77,7 @@ public class OpinionExtractorRequestHandler {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "1")
     })
-    public Response doSomething(String payload) {
+    public Response extractFeatureOpinion(String payload) {
         
         Extract extract = Extract.getInstance();
         java.util.List<Pattern> patterns = extract.run(payload);
@@ -96,6 +96,25 @@ public class OpinionExtractorRequestHandler {
         extractionResults.setFeatureOpinionPairs(featureOpinionPairs);
         
         return Response.ok(extractionResults).build();
+    }
+    
+    @POST
+    @Path("/opinion/graph")
+    @Timed
+    @Produces(MediaType.TEXT_PLAIN)    
+    @ApiOperation(value = "Text Graph of NLP Parse", notes = "Renders graph of NLP parse")
+    @ApiResponses(value = {
+            @ApiResponse(code = 403, message = "Error Code: 2200.  Something wrong")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "1")
+    })
+    public Response produceGraph(String sentence) {
+        
+        Extract extract = Extract.getInstance();
+        String output = extract.graph(sentence);
+        
+        return Response.ok(output).build();
     }
 
 }

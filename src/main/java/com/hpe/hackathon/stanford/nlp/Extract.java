@@ -5,6 +5,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
+import edu.stanford.nlp.semgraph.SemanticGraphFormatter;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
 
@@ -138,6 +139,20 @@ public class Extract {
         br.close();
 
         return words;
+    }
+    
+    public String graph(String sentence) {
+        Annotation annotation = pipeline.process(sentence);
+        List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+        CoreMap coreMapSentence = (CoreMap) sentences.get(0);
+        //SemanticGraph graph = coreMapSentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
+        SemanticGraph graph = coreMapSentence.get(SemanticGraphCoreAnnotations.CollapsedDependenciesAnnotation.class);
+        
+        
+        String g = null;
+        //g = graph.toDotFormat();
+        g = graph.toFormattedString(new SemanticGraphFormatter());
+        return g;
     }
 
     public List<Pattern> run(String text) {
