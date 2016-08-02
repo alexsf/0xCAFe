@@ -1,0 +1,12 @@
+{
+	"excluded":	[
+        "/eca/api/case/{caseId}/datasource/{datasourceId}/data/social-graph",
+        "/eca/api/case/{caseId}/datasource/{datasourceId}/data/volume-by-time-chart",
+        "/eca/api/case/{caseId}/custodian/{custodianId}/data/volume-by-time-chart",
+        "/eca/api/case/{caseId}/custodian/{custodianId}/data/partition-chart",    
+        "/eca/api/case/{caseId}/custodian/{custodianId}/data/partition-chart/timeline",
+        "/eca/api/case/{caseId}/datasource/{datasourceId}/data/partition-chart/timeline",
+        "/eca/api/case/{caseId}/data/partition-chart",
+        "/eca/api/case/{caseId}/data/social-graph"
+	 ]
+}
