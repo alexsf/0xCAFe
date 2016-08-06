@@ -3,12 +3,14 @@ package com.hpe.hackathon.runner;
 import java.util.Properties;
 
 import com.hpe.aspen.core.api.ApiApplication;
+import com.hpe.hackathon.api.OpinionExtractorConfiguration;
 
 
 public class OpinionExractorResource extends ApiApplication<OpinionExtractorConfiguration>{
 
     @Override
-    protected Properties getSpringProperties(OpinionExtractorConfiguration arg0) {
+    protected Properties getSpringProperties(OpinionExtractorConfiguration apiConfiguration) {
+        apiConfiguration.getJobserviceConfiguration();
         Properties p = new Properties();
         return p;
     }

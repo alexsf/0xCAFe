@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hpe.hackathon.opinionextract.plugin</groupId>
+    <artifactId>worker-opinionextract-plugin</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.hpe.caf</groupId>
+            <artifactId>rest-client</artifactId>
+            <version>1.0.7-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hpe.caf.messagebuilder</groupId>
+            <artifactId>document-message-builder</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hpe.caf.worker.batch</groupId>
+            <artifactId>worker-batch-extensibility</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>cmbg-maven-releases</id>
+            <name>Cambridge Nexus Releases</name>
+            <url>http://cmbg-maven.autonomy.com/nexus/content/repositories/releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>cmbg-maven-snapshots</id>
+            <name>Cambridge Nexus Snapshots</name>
+            <url>http://cmbg-maven.autonomy.com/nexus/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+    <!--
+    <distributionManagement>
+        <repository>
+            <id>cmbg-maven-releases</id>
+            <name>Internal Releases</name>
+            <url>http://cmbg-maven.autonomy.com/nexus/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>cmbg-maven-snapshots</id>
+            <name>Internal Snapshots</name>
+            <url>http://cmbg-maven.autonomy.com/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+    -->
+</project>

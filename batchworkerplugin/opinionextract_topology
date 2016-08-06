@@ -1,0 +1,32 @@
+#!/bin/bash
+
+eval $(docker-machine env default);
+
+docker stop `docker ps -a --format "{{.ID}}"`;
+docker rm -f `docker ps -a --format "{{.ID}}"`;
+
+docker run -p 35672:5672 -p 35673:15672 --name rmq_tagging -d rabbitmq:3-management;
+
+docker run -p 35432:5432 --name psql_tagging -d postgres:9.5;
+
+sleep 10;
+
+docker run --link psql_tagging:postgresql -it rh7-artifactory.hpswlabs.hp.com:8443/caf/job-service-db-installer:latest java -jar /job-service-db.jar -db.connection jdbc:postgresql://postgresql:5432 -db.name jobservice -db.pass root -db.user postgres -fd;
+
+docker run --link rmq_tagging:rabbitmq --link psql_tagging:postgresql -p 38080:8080 -e "CAF_STATUS_CHECK_TIME=5" -e "CAF_RABBITMQ_USERNAME=guest" -e "CAF_WEBSERVICE_URL=http://192.168.99.100:38080/job-service-incorrect/v1" -e "CAF_RABBITMQ_PASSWORD=guest" -e "CAF_APPNAME=tagging/jobservice" -e "CAF_RABBITMQ_HOST=rabbitmq" -e "CAF_TRACKING_PIPE=tracking-workflow-in" -e "CAF_DATABASE_USERNAME=postgres" -e "CAF_RABBITMQ_PORT=5672" -e "CAF_DATABASE_PASSWORD=root" -e "CAF_CONFIG_PATH=/config" -e "CAF_DATABASE_URL=jdbc:postgresql://postgresql:5432/jobservice" -d rh7-artifactory.hpswlabs.hp.com:8443/caf/job-service:latest;
+
+docker run -p 33333:3333 --name tagging_batch_worker --link rmq_tagging:rabbitmq -v /mnt/mesos/sandbox/batch-plugins -v /Users/ateplitsky/Development/autonomyprojects/ateplitsky-macpro/IdolApps/aspen-tagging/worker-tagging-container/worker-batch-config:/config -e "CAF_CONFIG_PATH=/config" -e "CAF_APPNAME=batch/worker" -d rh7-artifactory.hpswlabs.hp.com:8443/caf/worker-batch:latest;
+
+
+docker run --name tagging_jobtracking_worker --link rmq_tagging:rabbitmq --link psql_tagging:postgresql -v /Users/ateplitsky/Development/autonomyprojects/ateplitsky-macpro/IdolApps/aspen-tagging/worker-tagging-container/worker-jobtracking-config:/config -e "CAF_CONFIG_PATH=/config" -e "CAF_APPNAME=jobtracking/worker" -e "JOB_DATABASE_URL=jdbc:postgresql://postgresql:5432/jobservice" -e "JOB_DATABASE_USERNAME=postgres" -e "JOB_DATABASE_PASSWORD=root" -d rh7-artifactory.hpswlabs.hp.com:8443/caf/worker-jobtracking:latest;
+
+
+
+cd worker-opinionextract-plugins-package/target;
+tar -zxvf opinionextract-batch-plugins.tar.gz;
+for f in batch-plugins/*.jar; do docker cp $f tagging_batch_worker:/mnt/mesos/sandbox/batch-plugins; done
+
+docker exec tagging_batch_worker sed -i -e 's/INFO/DEBUG/g' maven/worker.yaml
+docker exec tagging_batch_worker sed -i -e 's/exec java/exec java -Xdebug -Xrunjdwp:transport=dt_socket,address=3333,server=y,suspend=n/g' maven/worker.sh
+
+docker restart tagging_batch_worker;

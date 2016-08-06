@@ -5,3 +5,29 @@ server:
   adminConnectors:
   - type: http
     port: 7172
+
+jobservice:
+  host: 192.168.99.100
+  port: 38080
+  type: http
+  version: 1
+
+
+analytics: http://192.168.99.1:8080/platform-services/api
+application-resources: http://eca-nightly-mesos.hpeswlab.net:31795/aspen/api
+
+
+messaging:
+  input-queue: QueryQueue
+  output-queue: TaggingWorker-output
+
+
+jerseyClient:
+  minThreads: 1
+  maxThreads: 128
+  workQueueSize: 8
+  timeout: 100000000ms
+  connectionTimeout: 100000000ms
+  gzipEnabled: false
+  gzipEnabledForRequests: false
+  chunkedEncodingEnabled: false

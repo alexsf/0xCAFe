@@ -3,21 +3,32 @@ package com.hpe.hackathon.runner;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hpe.caf.client.RestClient;
+import com.hpe.caf.services.job.client.model.NewJob;
+import com.hpe.caf.services.job.client.model.WorkerAction;
+import com.hpe.caf.services.job.client.model.WorkerAction.TaskDataEncodingEnum;
+import com.hpe.caf.worker.batch.BatchWorkerConstants;
+import com.hpe.caf.worker.batch.BatchWorkerTask;
+import com.hpe.hackathon.api.OpinionExtractorConfiguration;
 import com.hpe.hackathon.stanford.nlp.Extract;
 import com.hpe.hackathon.stanford.nlp.Pattern;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiImplicitParam;
 import com.wordnik.swagger.annotations.ApiImplicitParams;
 import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
@@ -28,7 +39,37 @@ import java.util.*;
 @Path("/")
 public class OpinionExtractorRequestHandler {
     
+    @Autowired
+    OpinionExtractorConfiguration apiConfiguration;
+    
+    @Autowired
+    Client client;
+    
     private static final Logger logger = LoggerFactory.getLogger(OpinionExtractorRequestHandler.class);
+    
+    public static class Review {
+        private Integer id = null;
+        private String text = null;;
+        private String product = null;
+        public Integer getId() {
+            return id;
+        }
+        public void setId(Integer id) {
+            this.id = id;
+        }
+        public String getText() {
+            return text;
+        }
+        public void setText(String text) {
+            this.text = text;
+        }
+        public String getProduct() {
+            return product;
+        }
+        public void setProduct(String product) {
+            this.product = product;
+        }
+    }
     
     public static class FeatureOpinion {
         private String feature;
@@ -116,5 +157,77 @@ public class OpinionExtractorRequestHandler {
         
         return Response.ok(output).build();
     }
+    
+    @POST
+    @Path("/opinion/review")
+    @Timed
+    @Produces(MediaType.APPLICATION_JSON)    
+    @ApiOperation(value = "Submit Review", notes = "Submit Review")
+    @ApiResponses(value = {
+            @ApiResponse(code = 403, message = "Error Code: 2200.  Something wrong")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "1")
+    })
+    public Review submitReview(@ApiParam(value = "Review Text") Review review) {
+        
+        String jobId = UUID.randomUUID().toString();
+        String payload = new String(this.getTaskDataAsBytes(review));
+        NewJob extractJob = createBatchJob(jobId, payload);
+        
+        
+        RestClient<String> restClient = (new RestClient<String>(client) {});
+        restClient.put(apiConfiguration.getJobserviceConfiguration().getJobserviceEndpoint() + "/jobs/" + jobId, extractJob);
+        
+        return review;
+    }
+    
+    private byte[] getTaskDataAsBytes(Object taskData) {
+        try {            
+            ObjectMapper mapper = new ObjectMapper();
+            byte b[] = mapper.writeValueAsBytes(taskData);
+            
+            return b;
+        }
+        catch (Exception e) {
+            throw new RuntimeException (e);
+        }
+    }
+    
+    /***/
+    protected NewJob createBatchJob(String jobId, String payload) {
+        String jobName = "Job_" + jobId;
+        NewJob newJob = new NewJob();
+        newJob.setDescription(jobName  +  "__description");
+        newJob.setExternalData(jobName +  "__externalData");
+        newJob.setName(jobName);
+        
+        WorkerAction workerAction = new WorkerAction();
+        workerAction.setTaskClassifier(BatchWorkerConstants.WORKER_NAME);
+        workerAction.setTaskApiVersion(BatchWorkerConstants.WORKER_API_VERSION);
+        workerAction.setTaskDataEncoding(TaskDataEncodingEnum.UTF8);
+        
+        workerAction.setTaskPipe(apiConfiguration.getMessagingConfiguration().getInputQueueName());
+        workerAction.setTargetPipe(apiConfiguration.getMessagingConfiguration().getOutputQueueName());
+        
+        BatchWorkerTask task = new BatchWorkerTask();
+        
+        Map<String, String> taskMessageParams = new HashMap<String, String>();
+        taskMessageParams.put("analytics", apiConfiguration.getAnalytics());
+        taskMessageParams.put("applicationResources", apiConfiguration.getApplicationResources());
+        
+        task.batchDefinition = payload;
+        task.batchType = "OpinionExtractBatchWorkerPlugin";
+        task.taskMessageParams = taskMessageParams;
+        task.targetPipe = apiConfiguration.getMessagingConfiguration().getOutputQueueName();
+        
+        String taskString = new String(getTaskDataAsBytes(task));
+        
+        workerAction.setTaskData(taskString);
+        
+        newJob.setTask(workerAction);
+        
+        return newJob;
+    }/***/
 
 }
