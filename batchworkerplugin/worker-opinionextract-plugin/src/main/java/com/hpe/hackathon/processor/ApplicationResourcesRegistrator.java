@@ -19,11 +19,17 @@ public class ApplicationResourcesRegistrator {
         }
     }
     
+    protected String applicationResourcesUrl;
+    
+    public ApplicationResourcesRegistrator(String applicationResourcesUrl) {
+        this.applicationResourcesUrl = applicationResourcesUrl;
+    }
+    
     /*
      * Associates feature with productId and opinion with feature
      * Returns: ProcessResponse if associations have been made, otherwise return null
      */
-    public static Response process(Integer productId, String feature, String opinion) {
+    public Response process(Integer productId, String feature, String opinion) {
         return (Response)null;
     }
 }

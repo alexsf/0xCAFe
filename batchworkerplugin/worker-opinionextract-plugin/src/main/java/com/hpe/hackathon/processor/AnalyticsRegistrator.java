@@ -4,13 +4,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AnalyticsRegistrator {
-        
+    
+    protected String analyticsUrl;
     private static final Logger LOG = LoggerFactory.getLogger(AnalyticsRegistrator.class);
+    
+    public AnalyticsRegistrator(String analyticsUrl) {
+        this.analyticsUrl = analyticsUrl;
+    }
     
     /*
      * Registers entity id and its' type (i.e. "product", "feature", "opinion" or "fop")
      */
-    public static void process(Integer entityId, String type) {
+    public void process(Integer entityId, String type) {
         //
         // TODO:
         // POST http://localhost:8080/platform-services/api/filters:
@@ -24,7 +29,7 @@ public class AnalyticsRegistrator {
     }
     
     
-    public static void process(Integer featureEntityId, Integer opinionEntityId) {
+    public void process(Integer featureEntityId, Integer opinionEntityId) {
         LOG.debug("featureEntityId/opinionEntityId");
         //
         // Cantor algorithm (http://math.stackexchange.com/questions/23503/create-unique-number-from-2-numbers)

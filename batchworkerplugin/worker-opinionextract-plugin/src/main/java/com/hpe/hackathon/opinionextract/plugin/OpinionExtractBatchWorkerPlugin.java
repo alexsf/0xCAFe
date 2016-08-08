@@ -28,7 +28,6 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
     }
     
     public static class FeatureOpinion {
-        private String type;
         private String feature;
         private String opinion;
         private Integer productId; 
@@ -50,15 +49,12 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
         public void setProductId(Integer productId) {
             this.productId = productId;
         }
-        public String getType() {
-            return type;
-        }
-        public void setType(String type) {
-            this.type = type;
-        }
     }
     
     public static class ExtractionResults {
+        
+        private String type = "fop";
+        
         @JsonProperty("pairs")
         private List<FeatureOpinion> featureOpinionPairs;
 
@@ -68,6 +64,14 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
 
         public void setFeatureOpinionPairs(List<FeatureOpinion> featureOpinionPairs) {
             this.featureOpinionPairs = featureOpinionPairs;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
         }
     }
     
@@ -93,10 +97,10 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
         else  {
             String stringRequestType = (String)requestType;
             if ("sentence".equalsIgnoreCase(stringRequestType)) {
-                String text = (String)mapRequest.get("text");
+                String sentence = (String)mapRequest.get("text");
                 Integer productid = (Integer)mapRequest.get("productId");
-                LOG.debug("#0.2 - received sentence: " + text);
-                java.util.List<Pattern> patterns = extract.run(text);
+                LOG.debug("#0.2 - received sentence: " + sentence);
+                java.util.List<Pattern> patterns = extract.run(sentence);
                 
                 List<FeatureOpinion> featureOpinionPairs = new ArrayList<FeatureOpinion>();
                 
@@ -105,7 +109,6 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                     featureOpinion.setFeature(pattern.head);
                     featureOpinion.setOpinion(pattern.modifier);
                     featureOpinion.setProductId(productid);
-                    featureOpinion.setType("fop");
                     
                     featureOpinionPairs.add(featureOpinion);
                 }
@@ -124,20 +127,33 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                 
                 LOG.debug("#0.3--->" + batchDefinition);
                 
-                Integer productId = (Integer)mapRequest.get("productId");
-                String feature = (String)mapRequest.get("feature");
-                String opinion = (String)mapRequest.get("opinion");
+                ApplicationResourcesRegistrator applicationResourcesRegistrator = new ApplicationResourcesRegistrator(taskMessageParams.get("applicationResources"));
                 
-                ApplicationResourcesRegistrator.Response applicationResourcesRegistratorResponse = ApplicationResourcesRegistrator.process(productId, feature, opinion);
-                if (applicationResourcesRegistratorResponse != null) {
-                    AnalyticsRegistrator.process(productId, "product");
-                    AnalyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), "feature");
-                    AnalyticsRegistrator.process(applicationResourcesRegistratorResponse.getOpinionEntityId(), "opinion");
-                    AnalyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), applicationResourcesRegistratorResponse.getOpinionEntityId());
-                }
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> pairs = (List<Map<String, Object>>)mapRequest.get("pairs");
+                for (Map<String, Object> pair : pairs) {
+                    String feature = (String)pair.get("feature");
+                    String opinion = (String)pair.get("opinion");
+                    Integer productId = (Integer)pair.get("productId");
+                    
+                    ApplicationResourcesRegistrator.Response applicationResourcesRegistratorResponse = applicationResourcesRegistrator.process(productId, feature, opinion);
+                    
+                    if (applicationResourcesRegistratorResponse != null) {
+                        AnalyticsRegistrator analyticsRegistrator = new AnalyticsRegistrator(taskMessageParams.get("analytics"));
+                        analyticsRegistrator.process(productId, "product");
+                        analyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), "feature");
+                        analyticsRegistrator.process(applicationResourcesRegistratorResponse.getOpinionEntityId(), "opinion");
+                        analyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), applicationResourcesRegistratorResponse.getOpinionEntityId());
+                    }
+                                        
+                    FeatureOpinion fop = new FeatureOpinion();
+                    fop.setFeature(feature);
+                    fop.setOpinion(opinion);
+                    fop.setProductId(productId);
+                    batchWorkerServices.registerItemSubtask("NOOP", 1, fop);
+                }   
                 
-                // to next worker - which one ????
-                batchWorkerServices.registerItemSubtask("BRIDGE_TO_NOWHERE", 1, new Object());
+                
             }
         }
         
