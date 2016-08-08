@@ -9,7 +9,7 @@ import string
 ##
 ## Opinion Extraction
 ##
-opinionExtractUrl = "http://localhost:7171/opinion"
+opinionExtractUrl = "http://localhost:7171/opinion/review"
 
 ##
 ## Index Server Url
@@ -28,30 +28,23 @@ def filter_non_printable(review):
     return filter(lambda x: x in printable, review)
 
 
-def get_feature_opinion_pairs(review_json):
-    review = json.loads(review_json)
-    review_text = review["text"]
-    request = urllib2.Request(opinionExtractUrl, review_text, {"X-TENANT-ID": "1"})
+def process_review(review_json):
+    request = urllib2.Request(opinionExtractUrl, review_json, {"X-TENANT-ID": "1", "Content-Type": "application/json"})
     response = urllib2.urlopen(request)
     return response.read()
 
-def work(id, review, product):
+def work(id, review, productid):
     r = extract_content(review)
     data = {}
     r = filter_non_printable(r)
     data["id"] = id
     data["text"] = r
-    data["product"] = product
-    index(data)
-    json_data = json.dumps(data)
-    fop = get_feature_opinion_pairs(json_data)    
-    pairs_obj = json.loads(fop)
-    pairs_obj["product"] = product
-    print json.dumps(pairs_obj)
-    ##pairs = pairs_obj["pairs"]
-    ##for pair in pairs:
-        ##print pair["feature"] + "\t" + pair["opinion"]
+    data["productId"] = productid
+    #### DO NOT INDEX     index(data)   ########
 
+    json_data = json.dumps(data)
+    submitted_review = process_review(json_data)
+    print submitted_review
 
 def is_interesting(review, look_for_features):
     if look_for_features is None:
@@ -65,7 +58,6 @@ def is_interesting(review, look_for_features):
 
 def index(data):
     payload = {}
-    payload["product"] = data["product"]
     payload["text"] = data["text"]
     elastic_url = indexServerUrl + "/1_index/review/" + str(data["id"])
     print elastic_url
@@ -74,8 +66,8 @@ def index(data):
     response.read()
 
 def main(argv):
-    id = 0
-    product = argv[0]
+    productid = int(argv[0])
+    id = productid
     try:
         look_for_features = argv[1]
     except IndexError:
@@ -85,8 +77,10 @@ def main(argv):
             review = review.lower()
             if not is_interesting(review, look_for_features):
                 continue
+            ## for productid 10000, review ids will be 10001, 10002, 10003, etc
+            ## for prodcutid 20000, review ids will be 20001, 20002, 20003
             id += 1
-            work(id, review, product)
+            work(id, review, productid)
         except Exception,e:
             print "Interrupted by user or error occured"
             print str(e)

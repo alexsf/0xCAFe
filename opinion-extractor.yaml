@@ -19,7 +19,7 @@ application-resources: http://eca-nightly-mesos.hpeswlab.net:31795/aspen/api
 
 messaging:
   input-queue: QueryQueue
-  output-queue: TaggingWorker-output
+  output-queue: OpinionExtract-output
 
 
 jerseyClient:

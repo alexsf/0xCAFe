@@ -1,0 +1,101 @@
+{
+  "entities": [
+    {
+      "name": "item",
+      "extract-expressions": {
+        "jsonpath": ""
+      },
+      "searchable": true,
+      "properties": [
+        {
+          "name": "id",
+          "extract-expressions": {
+            "jsonpath": "/todo: int or string"
+          },
+          "datatype": "LONG",
+          "indextype": "NONE",
+          "lower-case": false,
+          "match": false,
+          "parametric": true,
+          "primary": true,
+          "multivalue": false,
+          "ordered": false,
+          "extended": false,
+          "length": 0,
+          "dreReference": false
+        },
+        {
+          "name": "product",
+          "extract-expressions": {
+            "jsonpath": "/unused"
+          },
+          "datatype": "FILTER",
+          "indextype": "NONE",
+          "lower-case": false,
+          "match": false,
+          "parametric": true,
+          "primary": false,
+          "multivalue": true,
+          "ordered": false,
+          "extended": false,
+          "length": 200,
+          "dreReference": false
+        },
+        {
+          "name": "feature",
+          "extract-expressions": {
+            "jsonpath": "/unused"
+          },
+          "datatype": "FILTER",
+          "indextype": "NONE",
+          "lower-case": false,
+          "match": false,
+          "parametric": true,
+          "primary": false,
+          "multivalue": true,
+          "ordered": false,
+          "extended": false,
+          "length": 200,
+          "dreReference": false
+        },
+        {
+          "name": "opinion",
+          "extract-expressions": {
+            "jsonpath": "/unused"
+          },
+          "datatype": "STRING",
+          "indextype": "NONE",
+          "lower-case": false,
+          "match": false,
+          "parametric": true,
+          "primary": false,
+          "multivalue": true,
+          "ordered": false,
+          "extended": false,
+          "length": 200,
+          "dreReference": false
+        },
+        {
+          "name": "fop",
+          "extract-expressions": {
+            "jsonpath": "/unused"
+          },
+          "datatype": "FILTER",
+          "indextype": "NONE",
+          "lower-case": false,
+          "match": false,
+          "parametric": true,
+          "primary": false,
+          "multivalue": true,
+          "ordered": false,
+          "extended": false,
+          "length": 200,
+          "dreReference": false
+        }
+      ]
+    }
+  ],
+  "config": {
+    "prefix-name": "false"
+  }
+}
