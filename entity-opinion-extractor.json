@@ -20,7 +20,6 @@
           "primary": true,
           "multivalue": false,
           "ordered": false,
-          "extended": false,
           "length": 0,
           "dreReference": false
         },
@@ -37,7 +36,6 @@
           "primary": false,
           "multivalue": true,
           "ordered": false,
-          "extended": false,
           "length": 200,
           "dreReference": false
         },
@@ -54,7 +52,6 @@
           "primary": false,
           "multivalue": true,
           "ordered": false,
-          "extended": false,
           "length": 200,
           "dreReference": false
         },
@@ -71,7 +68,6 @@
           "primary": false,
           "multivalue": true,
           "ordered": false,
-          "extended": false,
           "length": 200,
           "dreReference": false
         },
@@ -88,7 +84,6 @@
           "primary": false,
           "multivalue": true,
           "ordered": false,
-          "extended": false,
           "length": 200,
           "dreReference": false
         }
