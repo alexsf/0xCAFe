@@ -109,7 +109,7 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                     fop.setFeature("");
                     fop.setOpinion("");
                     fop.setProductId(productId);
-                    batchWorkerServices.registerItemSubtask("NOOP", 1, fop);
+                    batchWorkerServices.registerItemSubtask("NOOP:sentence-ignored", 1, fop);
                     return;
                 }
                 
@@ -117,6 +117,13 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                 
                 Integer productid = (Integer)mapRequest.get("productId");
                 LOG.debug("#0.2 - received sentence: " + sentence);
+                
+                // Check sentence length, make sure it does not exceed 100 characters (see Stanford CoreNLP)
+                if (sentence.length() > 100) {
+                    LOG.debug("#0.1(b) - truncating sentence to no more than 100 characters " + sentence);
+                    sentence = sentence.substring(0, 100);
+                }
+                
                 java.util.List<Pattern> patterns = extract.run(sentence);
                 
                 List<FeatureOpinion> featureOpinionPairs = new ArrayList<FeatureOpinion>();
@@ -148,10 +155,25 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                 
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> pairs = (List<Map<String, Object>>)mapRequest.get("pairs");
+                int nPairs = pairs.size();
+                int nIgnoredPairs = 0;
                 for (Map<String, Object> pair : pairs) {
+                    
                     String feature = (String)pair.get("feature");
+                    String trackFeaturesCsv = taskMessageParams.get("trackFeatures");
+                    String[] trackFeatures = trackFeaturesCsv.split(",");
+                    
+                    if (isFeatureToBeIgnored(feature, trackFeatures)) {
+                        nIgnoredPairs++;
+                        continue;
+                    }
+                    
                     String opinion = (String)pair.get("opinion");
                     Integer productId = (Integer)pair.get("productId");
+                    
+                    
+                    LOG.debug("#0.3(a)--->" + String.format("Preparing for Analysis:  {\"feature\": \"%s\", \"opinion\": \"%s\"}", feature, opinion));
+                    
                     
                     ApplicationResourcesRegistrator.Response applicationResourcesRegistratorResponse = applicationResourcesRegistrator.process(productId, feature, opinion);
                     
@@ -162,13 +184,23 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                         analyticsRegistrator.process(applicationResourcesRegistratorResponse.getOpinionEntityId(), "opinion");
                         analyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), applicationResourcesRegistratorResponse.getOpinionEntityId());
                     }
+                                       
                                         
                     FeatureOpinion fop = new FeatureOpinion();
                     fop.setFeature(feature);
                     fop.setOpinion(opinion);
                     fop.setProductId(productId);
-                    batchWorkerServices.registerItemSubtask("NOOP", 1, fop);
-                }   
+                    batchWorkerServices.registerItemSubtask("NOOP:fop-extracted", 1, fop);
+                }
+                
+                if (nPairs == nIgnoredPairs) {
+                    FeatureOpinion fop = new FeatureOpinion();
+                    Integer productId = (Integer)mapRequest.get("productId");
+                    fop.setFeature("");
+                    fop.setOpinion("");
+                    fop.setProductId(productId);
+                    batchWorkerServices.registerItemSubtask("NOOP:fop-ignored", 1, fop);
+                }
                 
                 
             }
@@ -185,6 +217,23 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
         boolean ignore = true;
         for (String feature : trackFeatures) {
             if (sentence.contains(feature)) {
+                ignore = false;
+                break;
+            }
+        }
+        return ignore;
+        
+    }
+    
+    private boolean isFeatureToBeIgnored(String feature, String[] trackFeatures) {
+        if (trackFeatures == null || trackFeatures.length == 0) {
+            // no particular feature to track, therefore will track everything
+            return false;
+        }
+        boolean ignore = true;
+        for (String trackFeature : trackFeatures) {
+            
+            if (trackFeature.equalsIgnoreCase(feature)) {
                 ignore = false;
                 break;
             }
