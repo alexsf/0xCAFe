@@ -179,7 +179,7 @@ public class OpinionExtractorRequestHandler {
         logger.debug("Created JobId #" + jobId);
         
         String payload = new String(this.getTaskDataAsBytes(review));
-        NewJob extractJob = createBatchJob(jobId, payload);
+        NewJob extractJob = createBatchJob(jobId, payload, review.getProductId());
         
         
         RestClient<String> restClient = (new RestClient<String>(client) {});
@@ -201,7 +201,7 @@ public class OpinionExtractorRequestHandler {
     }
     
     /***/
-    protected NewJob createBatchJob(String jobId, String payload) {
+    protected NewJob createBatchJob(String jobId, String payload, Integer productId) {
         String jobName = "Job_" + jobId;
         NewJob newJob = new NewJob();
         newJob.setDescription(jobName  +  "__description");
@@ -221,6 +221,7 @@ public class OpinionExtractorRequestHandler {
         Map<String, String> taskMessageParams = new HashMap<String, String>();
         taskMessageParams.put("analytics", apiConfiguration.getAnalytics());
         taskMessageParams.put("applicationResources", apiConfiguration.getApplicationResources());
+        taskMessageParams.put("trackFeatures", getTrackFeatures(productId));
         
         task.batchDefinition = payload;
         task.batchType = "OpinionExtractBatchWorkerPlugin";
@@ -235,5 +236,24 @@ public class OpinionExtractorRequestHandler {
         
         return newJob;
     }/***/
+    
+    @SuppressWarnings("unchecked")
+    private String getTrackFeatures(Integer productId) {
+        RestClient<List<Map<String, Object>>> rc = new RestClient<List<Map<String, Object>>>() {};
+        String url = apiConfiguration.getApplicationResources() + "/entity?type=product&attributes=";
+        try {
+            String attributes = java.net.URLEncoder.encode("{\"productId\":  " + productId + "}", "UTF-8");
+            url = url + attributes;
+        }
+        catch (Exception e) {
+            //
+        }
+        List<Map<String, Object>> results = rc.get(url);
+        Map<String, Object> result = results.get(0);
+        Map<String, Object> attributes = (Map<String, Object>)result.get("attributes");
+        List<String> trackFeatures = (List<String>)attributes.get("track-features");
+        
+        return String.join(",", trackFeatures);
+    }
 
 }

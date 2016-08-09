@@ -7,18 +7,18 @@ server:
     port: 7172
 
 jobservice:
-  host: svsedhack162.hpeswlab.net
-  port: 31923
+  host: 192.168.99.100
+  port: 38080
   type: http
   version: 1
 
 
-analytics: http://svsedhack162.hpeswlab.net:31880/platform-services/api
-application-resources: http://svsedhack162.hpeswlab.net:31795/aspen/api
+analytics: http://192.168.99.1:8080/platform-services/api
+application-resources: http://192.168.99.1:7195/aspen/api
 
 
 messaging:
-  input-queue: caf-batch-in
+  input-queue: QueryQueue
   output-queue: OpinionExtract-output
 
 

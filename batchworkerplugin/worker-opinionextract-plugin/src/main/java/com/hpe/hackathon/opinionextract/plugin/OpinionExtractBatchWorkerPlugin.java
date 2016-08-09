@@ -97,7 +97,24 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
         else  {
             String stringRequestType = (String)requestType;
             if ("sentence".equalsIgnoreCase(stringRequestType)) {
+                
+                String trackFeaturesCsv = taskMessageParams.get("trackFeatures");
+                String[] trackFeatures = trackFeaturesCsv.split(",");
+                
                 String sentence = (String)mapRequest.get("text");
+                if (isSentenceToBeIgnored(sentence, trackFeatures)) {
+                    LOG.debug("#0.1(a) - ignoring sentence: " + sentence);
+                    FeatureOpinion fop = new FeatureOpinion();
+                    Integer productId = (Integer)mapRequest.get("productId");
+                    fop.setFeature("");
+                    fop.setOpinion("");
+                    fop.setProductId(productId);
+                    batchWorkerServices.registerItemSubtask("NOOP", 1, fop);
+                    return;
+                }
+                
+                
+                
                 Integer productid = (Integer)mapRequest.get("productId");
                 LOG.debug("#0.2 - received sentence: " + sentence);
                 java.util.List<Pattern> patterns = extract.run(sentence);
@@ -157,6 +174,22 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
             }
         }
         
+        
+    }
+    
+    private boolean isSentenceToBeIgnored(String sentence, String[] trackFeatures) {
+        if (trackFeatures == null || trackFeatures.length == 0) {
+            // no particular feature to track, therefore will track everything
+            return false;
+        }
+        boolean ignore = true;
+        for (String feature : trackFeatures) {
+            if (sentence.contains(feature)) {
+                ignore = false;
+                break;
+            }
+        }
+        return ignore;
         
     }
     
