@@ -63,7 +63,7 @@
           "extract-expressions": {
             "jsonpath": "/unused"
           },
-          "datatype": "STRING",
+          "datatype": "FILTER",
           "indextype": "NONE",
           "lower-case": false,
           "match": false,
