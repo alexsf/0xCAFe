@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hpe.aspen.core.api.ApiThreadLocal;
 import com.hpe.caf.client.RestClient;
 import com.hpe.caf.services.job.client.model.NewJob;
 import com.hpe.caf.services.job.client.model.WorkerAction;
@@ -248,7 +249,7 @@ public class OpinionExtractorRequestHandler {
         catch (Exception e) {
             //
         }
-        List<Map<String, Object>> results = rc.get(url);
+        List<Map<String, Object>> results = rc.header("X-TENANT-ID", ApiThreadLocal.get()).get(url);
         Map<String, Object> result = results.get(0);
         Map<String, Object> attributes = (Map<String, Object>)result.get("attributes");
         List<String> trackFeatures = (List<String>)attributes.get("track-features");

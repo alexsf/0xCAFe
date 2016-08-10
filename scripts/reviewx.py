@@ -35,7 +35,7 @@ def filter_non_printable(review):
 
 
 def process_review(review_json):
-    request = urllib2.Request(opinionExtractUrl, review_json, {"X-TENANT-ID": "1", "Content-Type": "application/json"})
+    request = urllib2.Request(opinionExtractUrl, review_json, {"X-TENANT-ID": "111800881824924672", "Content-Type": "application/json"})
     response = urllib2.urlopen(request)
     return response.read()
 
@@ -64,7 +64,7 @@ def is_interesting(review, look_for_features):
 
 def index(data):
     payload = {}
-    payload["text"] = data["text"]
+    payload["content_primary"] = data["text"]
     elastic_url = indexServerUrl + "/111800881824924672_item/item/" + str(data["id"])
     print elastic_url
     request = urllib2.Request(elastic_url, json.dumps(payload))
