@@ -24,6 +24,23 @@
           "dreReference": false
         },
         {
+          "name": "content_primary",
+          "extract-expressions": {
+            "jsonpath": "/unused"
+          },
+          "datatype": "STRING",
+          "indextype": "FULLTEXT",
+          "lower-case": false,
+          "match": false,
+          "parametric": false,
+          "primary": false,
+          "multivalue": false,
+          "ordered": false,
+          "extended": false,
+          "length": 1000000,
+          "dreReference": false
+        },
+        {
           "name": "product",
           "extract-expressions": {
             "jsonpath": "/unused"
