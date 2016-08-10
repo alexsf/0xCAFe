@@ -14,7 +14,13 @@ opinionExtractUrl = "http://localhost:7171/opinion/review"
 ##
 ## Index Server Url
 ##
-indexServerUrl = "http://192.168.99.100:9200"
+##indexServerUrl = "http://192.168.99.100:9200"
+indexServerUrl = "http://hack01-vrt.hpeswlab.net:9200"
+
+##
+##
+##
+analyticsUrl = "http://svsedhack162.hpeswlab.net:31880/platform-services/api"
 
 
 def extract_content(review):
@@ -40,7 +46,7 @@ def work(id, review, productid):
     data["id"] = id
     data["text"] = r
     data["productId"] = productid
-    #### DO NOT INDEX     index(data)   ########
+    index(data)
 
     json_data = json.dumps(data)
     submitted_review = process_review(json_data)
@@ -59,9 +65,16 @@ def is_interesting(review, look_for_features):
 def index(data):
     payload = {}
     payload["text"] = data["text"]
-    elastic_url = indexServerUrl + "/1_index/review/" + str(data["id"])
+    elastic_url = indexServerUrl + "/111800881824924672_item/item/" + str(data["id"])
     print elastic_url
     request = urllib2.Request(elastic_url, json.dumps(payload))
+    response = urllib2.urlopen(request)
+    response.read()
+
+    analytics_url = analyticsUrl + "/sqldata"
+    payload = {}
+    payload["sql"] = "insert into item(id) values(" + str(data["id"]) + ")"
+    request = urllib2.Request(analytics_url, json.dumps(payload), {"X-TENANT-ID": "111800881824924672", "Content-Type": "application/json"})
     response = urllib2.urlopen(request)
     response.read()
 
