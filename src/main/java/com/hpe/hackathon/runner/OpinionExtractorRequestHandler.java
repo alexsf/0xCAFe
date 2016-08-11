@@ -1,10 +1,13 @@
 package com.hpe.hackathon.runner;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,62 +109,105 @@ public class OpinionExtractorRequestHandler {
         }
     }
     
-    /***public OpinionExtractorRequestHandler() {
-        logger.info("Initializing Extractor instance, please wait...");
-        Extract.getInstance();
-        logger.info("Done initializing Extractor instance!");
-    }
-    
-    @POST
-    @Path("/opinion")
+    @GET
+    @Path("/opinion/search")
     @Timed
     @Produces(MediaType.APPLICATION_JSON)    
-    @ApiOperation(value = "Extract feature/opinion pairs", notes = "Extracts feature/opinion pairs from arbitrary text")
+    @ApiOperation(value = "Search all", notes = "Search all")
     @ApiResponses(value = {
             @ApiResponse(code = 403, message = "Error Code: 2200.  Something wrong")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "1")
+        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "111800881824924672")
     })
-    public Response extractFeatureOpinion(String payload) {
+    public List<ProductFeatureResponse> search(@ApiParam(value = "Feature") @QueryParam("feature") String feature, @ApiParam(value = "Opinion") @QueryParam("opinion") String opinion) {
+        /*
+         [
+            {
+              "name": "Bellagio",
+              "productId": "10000",
+              "feature": "location",
+              "opinion": "central",
+              "count": "10"
+            }
+         ]
+         */
         
-        Extract extract = Extract.getInstance();
-        java.util.List<Pattern> patterns = extract.run(payload);
-        
-        List<FeatureOpinion> featureOpinionPairs = new ArrayList<FeatureOpinion>();
-        
-        for (Pattern pattern : patterns) {
-            FeatureOpinion featureOpinion = new FeatureOpinion();
-            featureOpinion.setFeature(pattern.head);
-            featureOpinion.setOpinion(pattern.modifier);
+        List<Map<String, String>> listProducts = new ProductSearcher(apiConfiguration, client).getSearchResults(feature, opinion);
+        List<ProductFeatureResponse> productFeatureResponses = new ArrayList<ProductFeatureResponse>();
+        for (Map<String, String> product : listProducts) {
+            Integer productId = Integer.parseInt((String)product.get("productId"));
+            List<Map<String, String>> opinions = new OpinionSearcher(apiConfiguration, client).getSearchResults(productId, feature);
             
-            featureOpinionPairs.add(featureOpinion);
+            ProductFeatureResponse productFeatureResponse = new ProductFeatureResponse();
+            productFeatureResponses.add(productFeatureResponse);
+            productFeatureResponse.setFeature(feature);
+            productFeatureResponse.setName((String)product.get("name"));
+            productFeatureResponse.setSize(Integer.parseInt((String)product.get("count")));
+            
+            List<OpinionResponse> opinionResponses = new ArrayList<OpinionResponse>();
+            productFeatureResponse.setData(opinionResponses);
+            
+            for (Map<String,String> opini : opinions) {
+                OpinionResponse or = new OpinionResponse();
+                int size = Integer.parseInt((String)opini.get("count"));
+                or.setText((String)opini.get("opinion"));
+                or.setSize(size);
+                opinionResponses.add(or);
+            }
         }
-        
-        ExtractionResults extractionResults = new ExtractionResults();
-        extractionResults.setFeatureOpinionPairs(featureOpinionPairs);
-        
-        return Response.ok(extractionResults).build();
+        Collections.sort(productFeatureResponses, new Comparator<ProductFeatureResponse>(){
+            @Override
+            public int compare(ProductFeatureResponse o1, ProductFeatureResponse o2) {
+                return o1.getSize().compareTo(o2.getSize());
+            }
+        });
+        return productFeatureResponses;
     }
     
-    @POST
-    @Path("/opinion/graph")
+    @GET
+    @Path("/opinion/search/product")
     @Timed
-    @Produces(MediaType.TEXT_PLAIN)    
-    @ApiOperation(value = "Text Graph of NLP Parse", notes = "Renders graph of NLP parse")
+    @Produces(MediaType.APPLICATION_JSON)    
+    @ApiOperation(value = "Products matching feature/opinion search", notes = "Products matching feature/opinion search")
     @ApiResponses(value = {
             @ApiResponse(code = 403, message = "Error Code: 2200.  Something wrong")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "1")
+        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "111800881824924672")
     })
-    public Response produceGraph(String sentence) {
+    public Response searchProduct(@ApiParam(value = "Feature") @QueryParam("feature") String feature, @ApiParam(value = "Opinion") @QueryParam("opinion") String opinion) {
+        /*
+         [
+            {
+              "name": "Bellagio",
+              "productId": "10000",
+              "feature": "location",
+              "opinion": "central",
+              "count": "10"
+            }
+         ]
+         */
         
-        Extract extract = Extract.getInstance();
-        String output = extract.graph(sentence);
-        
-        return Response.ok(output).build();
-    }***/
+        List<Map<String, String>> listProducts = new ProductSearcher(apiConfiguration, client).getSearchResults(feature, opinion);
+        return Response.ok(listProducts).build();
+    }
+    
+    @GET
+    @Path("/opinion/search/opinion")
+    @Timed
+    @Produces(MediaType.APPLICATION_JSON)    
+    @ApiOperation(value = "Opinions matching product/feature search", notes = "Opinions matching product/feature search")
+    @ApiResponses(value = {
+            @ApiResponse(code = 403, message = "Error Code: 2200.  Something wrong")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "X-TENANT-ID", required = false, value = "Tenant ID", dataType = "string", paramType = "header", defaultValue = "111800881824924672")
+    })
+    public Response searchOpinion(@ApiParam(value = "Product ID") @QueryParam("productId") Integer productId, @ApiParam(value = "Feature") @QueryParam("feature") String feature) {
+        List<Map<String, String>> opinions = new OpinionSearcher(apiConfiguration, client).getSearchResults(productId, feature);
+        return Response.ok(opinions).build();
+    }
     
     @POST
     @Path("/opinion/review")
