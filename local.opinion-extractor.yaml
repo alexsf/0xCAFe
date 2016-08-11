@@ -15,7 +15,7 @@ jobservice:
 
 analytics: http://192.168.99.1:8080/platform-services/api
 application-resources: http://192.168.99.1:7195/aspen/api
-
+tagging: http://svsedhack162.hpeswlab.net:31705/aspen/tagging
 
 messaging:
   input-queue: QueryQueue

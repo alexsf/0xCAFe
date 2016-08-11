@@ -223,6 +223,7 @@ public class OpinionExtractorRequestHandler {
         taskMessageParams.put("analytics", apiConfiguration.getAnalytics());
         taskMessageParams.put("applicationResources", apiConfiguration.getApplicationResources());
         taskMessageParams.put("trackFeatures", getTrackFeatures(productId));
+        taskMessageParams.put("tagging", apiConfiguration.getTagging());
         
         task.batchDefinition = payload;
         task.batchType = "OpinionExtractBatchWorkerPlugin";

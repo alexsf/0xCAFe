@@ -125,6 +125,10 @@ public class OpinionExtractorConfiguration extends ApiConfiguration {
     
     @Valid
     @NotNull
+    String tagging;
+    
+    @Valid
+    @NotNull
     String applicationResources;
     
     
@@ -156,6 +160,16 @@ public class OpinionExtractorConfiguration extends ApiConfiguration {
     @JsonProperty
     public void setAnalytics(String a) {
         this.analytics = a;
+    }
+    
+    @JsonProperty
+    public String getTagging() {
+        return this.tagging;
+    }
+    
+    @JsonProperty
+    public void setTagging(String a) {
+        this.tagging = a;
     }
     
     @JsonProperty("application-resources")

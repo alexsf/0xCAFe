@@ -12,6 +12,7 @@ import com.hpe.caf.worker.batch.BatchWorkerPlugin;
 import com.hpe.caf.worker.batch.BatchWorkerServices;
 import com.hpe.hackathon.processor.AnalyticsRegistrator;
 import com.hpe.hackathon.processor.ApplicationResourcesRegistrator;
+import com.hpe.hackathon.processor.TaggingRegistrator;
 import com.hpe.hackathon.stanford.nlp.Extract;
 import com.hpe.hackathon.stanford.nlp.Pattern;
 
@@ -30,7 +31,8 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
     public static class FeatureOpinion {
         private String feature;
         private String opinion;
-        private Integer productId; 
+        private Integer productId;
+        private Integer reviewId;
         public String getFeature() {
             return feature;
         }
@@ -48,6 +50,12 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
         }
         public void setProductId(Integer productId) {
             this.productId = productId;
+        }
+        public Integer getReviewId() {
+            return reviewId;
+        }
+        public void setReviewId(Integer reviewId) {
+            this.reviewId = reviewId;
         }
     }
     
@@ -102,6 +110,7 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                 String[] trackFeatures = trackFeaturesCsv.split(",");
                 
                 String sentence = (String)mapRequest.get("text");
+                Integer reviewId = (Integer)mapRequest.get("reviewid");
                 if (isSentenceToBeIgnored(sentence, trackFeatures)) {
                     LOG.debug("#0.1(a) - ignoring sentence: " + sentence);
                     FeatureOpinion fop = new FeatureOpinion();
@@ -109,6 +118,7 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                     fop.setFeature("");
                     fop.setOpinion("");
                     fop.setProductId(productId);
+                    fop.setReviewId(reviewId);
                     batchWorkerServices.registerItemSubtask("NOOP:sentence-ignored", 1, fop);
                     return;
                 }
@@ -133,6 +143,7 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                     featureOpinion.setFeature(pattern.head);
                     featureOpinion.setOpinion(pattern.modifier);
                     featureOpinion.setProductId(productid);
+                    featureOpinion.setReviewId(reviewId);
                     
                     featureOpinionPairs.add(featureOpinion);
                 }
@@ -160,6 +171,7 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                 for (Map<String, Object> pair : pairs) {
                     
                     String feature = (String)pair.get("feature");
+                    
                     String trackFeaturesCsv = taskMessageParams.get("trackFeatures");
                     String[] trackFeatures = trackFeaturesCsv.split(",");
                     
@@ -170,9 +182,10 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                     
                     String opinion = (String)pair.get("opinion");
                     Integer productId = (Integer)pair.get("productId");
+                    Integer reviewId = (Integer)pair.get("reviewId");
                     
                     
-                    LOG.debug("#0.3(a)--->" + String.format("Preparing for Analysis:  {\"feature\": \"%s\", \"opinion\": \"%s\"}", feature, opinion));
+                    LOG.debug("#0.3(a)--->" + String.format("Preparing for Analysis:  {\"feature\": \"%s\", \"opinion\": \"%s\", \"reviewId\": %s}", feature, opinion, reviewId));
                     
                     
                     ApplicationResourcesRegistrator.Response applicationResourcesRegistratorResponse = applicationResourcesRegistrator.process(productId, feature, opinion);
@@ -183,6 +196,12 @@ public class OpinionExtractBatchWorkerPlugin implements BatchWorkerPlugin {
                         analyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), "feature");
                         analyticsRegistrator.process(applicationResourcesRegistratorResponse.getOpinionEntityId(), "opinion");
                         analyticsRegistrator.process(applicationResourcesRegistratorResponse.getFeatureEntityId(), applicationResourcesRegistratorResponse.getOpinionEntityId());
+                        
+                        TaggingRegistrator taggingRegistrator = new TaggingRegistrator(taskMessageParams.get("tagging"));
+                        taggingRegistrator.process(reviewId, productId);
+                        taggingRegistrator.process(reviewId, applicationResourcesRegistratorResponse.getFeatureEntityId());
+                        taggingRegistrator.process(reviewId, applicationResourcesRegistratorResponse.getOpinionEntityId());
+                        taggingRegistrator.process(reviewId, applicationResourcesRegistratorResponse.getFeatureEntityId(), applicationResourcesRegistratorResponse.getOpinionEntityId());
                     }
                                        
                                         
